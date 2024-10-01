@@ -3379,19 +3379,19 @@ schema_send_table_checksum(PGSQL *pgsql, SourceTable *table)
 	/*
 	 * Compute the hashtext of every single row in the table, and aggregate the
 	 * results as a sum of bigint numbers. Because the sum of bigint could
-	 * overflow to numeric, the aggregated sum is then hashed into an MD5
-	 * value: bigint is 64 bits, MD5 is 128 bits.
+	 * overflow to numeric, the aggregated sum is then hashed into an SHA256
+	 * value: bigint is 64 bits, SHA256 is 256 bits.
 	 *
 	 * Also, to lower the chances of a collision, include the row count in the
-	 * computation of the MD5 by appending it to the input string of the MD5
+	 * computation of the SHA256 by appending it to the input string of the SHA256
 	 * function.
 	 */
 	appendPQExpBuffer(sql,
 					  "select count(1) as cnt, "
-					  "md5(format('%%s-%%s', "
+					  "encode(sha256(format('%%s-%%s', "
 					  "      sum(hashtext(%s::text)::bigint),"
-					  "      count(1))"
-					  ")::uuid as chksum "
+					  "      count(1))::bytea),"
+					  "'hex') as chksum "
 					  "from only %s",
 					  attrList->data,
 					  table->qname);
